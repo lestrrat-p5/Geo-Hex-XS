@@ -28,7 +28,7 @@ char H_KEY[] = {
 #define H_DEG   (M_PI * ( 30.0 / 180.0 ))
 #define H_K     (tan(H_DEG))
 #define H_RANGE 21
-#define GEOHEX_CODE_BUFSIZ 4096
+#define GEOHEX_CODE_BUFSIZ 256
 
 typedef struct {
     double lat;
@@ -59,11 +59,11 @@ xy_2loc ( double x, double y, double *lon, double *lat ) {
 }
 
 static int
-get_code_by_xy( char **code, int x, int y, double max, int level ) {
+get_code_by_xy( char *code, int x, int y, double max, int level ) {
     int i = 0;
     char buf[3];
 
-    snprintf(*code, GEOHEX_CODE_BUFSIZ, "%c", H_KEY[ level % 60 ] );
+    snprintf(code, GEOHEX_CODE_BUFSIZ, "%c", H_KEY[ level % 60 ] );
 
     for ( i = 4; i > 0; i-- ) {
         double current = (double) X60POW[i];
@@ -74,7 +74,7 @@ get_code_by_xy( char **code, int x, int y, double max, int level ) {
                 H_KEY[ ((int) floor( ( x % above) / current )) ],
                 H_KEY[ ((int) floor( ( y % above) / current )) ]
             );
-            strncat(*code, buf, GEOHEX_CODE_BUFSIZ);
+            strncat(code, buf, GEOHEX_CODE_BUFSIZ);
         }
     }
 
@@ -82,7 +82,7 @@ get_code_by_xy( char **code, int x, int y, double max, int level ) {
         H_KEY[ ((int) floor( ( x % 3600 ) % 60 ) ) ],
         H_KEY[ ((int) floor( ( y % 3600 ) % 60 ) ) ]
     );
-    strncat(*code, buf, GEOHEX_CODE_BUFSIZ);
+    strncat(code, buf, GEOHEX_CODE_BUFSIZ);
 
     return 1;
 }
@@ -160,13 +160,7 @@ get_zone_by_location (PerlGeoHexZone *zone, double lat, double lon, int level) {
     zone->x   = h_x == 0 ? 0 : h_x;
     zone->y   = h_y == 0 ? 0 : h_y;
 
-    {
-        char *h_code;
-        Newxz(h_code, GEOHEX_CODE_BUFSIZ, char);
-        get_code_by_xy( &h_code, (int) h_x_abs, (int) h_y_abs, h_max, level );
-        Copy(h_code, zone->code, GEOHEX_CODE_BUFSIZ, char);
-        Safefree(h_code);
-    }
+    get_code_by_xy( zone->code, (int) h_x_abs, (int) h_y_abs, h_max, level );
 
     return 1;
 }
@@ -260,13 +254,7 @@ get_zone_by_xy( PerlGeoHexZone *zone, double x, double y, int level ) {
     double h_y_abs = abs(y) * 2 + y_p;
     xy_2loc( h_lon_x, h_lat_y, &h_lon, &h_lat );
 
-    {
-        char *h_code;
-        Newxz(h_code, GEOHEX_CODE_BUFSIZ, char);
-        get_code_by_xy( &h_code, (int) h_x_abs, (int) h_y_abs, h_max, level );
-        Copy(h_code, zone->code, GEOHEX_CODE_BUFSIZ, char);
-        Safefree(h_code);
-    }
+    get_code_by_xy( zone->code, (int) h_x_abs, (int) h_y_abs, h_max, level );
 
     zone->lat = h_lat;
     zone->lon = h_lon;
