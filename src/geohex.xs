@@ -96,7 +96,6 @@ get_zone_by_location (PerlGeoHexZone *zone, double lat, double lon, int level) {
     double h_pos_x, h_pos_y;
     double h_x_0, h_y_0;
     double h_x_q, h_y_q;
-    double h_x_p, h_y_p;
     double h_x_abs, h_y_abs;
     double h_x, h_y;
     double h_max;
@@ -143,17 +142,8 @@ get_zone_by_location (PerlGeoHexZone *zone, double lat, double lon, int level) {
         h_y = tmp;
     }
         
-    h_x_p = 0;
-    h_y_p = 0;
-    if (h_x < 0 ) {
-        h_x_p = 1;
-    }
-    if (h_y < 0) {
-        h_y_p = 1;
-    }
-
-    h_x_abs = abs( h_x ) * 2 + h_x_p;
-    h_y_abs = abs( h_y ) * 2 + h_y_p;
+    h_x_abs = abs( h_x ) * 2 + (( h_x < 0 ) ? 1 : 0);
+    h_y_abs = abs( h_y ) * 2 + (( h_y < 0 ) ? 1 : 0);
 
     zone->lat = z_loc_y;
     zone->lon = z_loc_x;
