@@ -1,6 +1,7 @@
 #include "EXTERN.h"
 #include "perl.h"
 #include "XSUB.h"
+#include "xshelper.h"
 
 #include <math.h>
 #include <stdio.h>
@@ -38,19 +39,19 @@ typedef struct {
     char code[ GEOHEX_CODE_BUFSIZ ];
 } PerlGeoHexZone;
 
-static double
+STATIC_INLINE double
 hex_size (double level) {
     return (H_BASE / pow(2.0, level)) / 3.0;
 }
 
-static int
+STATIC_INLINE int
 loc_2xy ( double lon, double lat, double *x, double *y ) {
     *x = lon * H_BASE / 180;
     *y = H_BASE * log( tan( (90 + lat ) * M_PI / 360 ) ) / ( M_PI / 180 ) / 180;
     return 1;
 }
 
-static int
+STATIC_INLINE int
 xy_2loc ( double x, double y, double *lon, double *lat ) {
     *lon = ( x / H_BASE ) * 180;
     *lat = ( y / H_BASE ) * 180;
@@ -58,7 +59,7 @@ xy_2loc ( double x, double y, double *lon, double *lat ) {
     return 1;
 }
 
-static int
+STATIC_INLINE int
 get_code_by_xy( char *code, int x, int y, double max, int level ) {
     int i = 0;
     char buf[3];
@@ -86,8 +87,6 @@ get_code_by_xy( char *code, int x, int y, double max, int level ) {
 
     return 1;
 }
-
-
 
 static int
 get_zone_by_location (PerlGeoHexZone *zone, double lat, double lon, int level) {
@@ -155,7 +154,7 @@ get_zone_by_location (PerlGeoHexZone *zone, double lat, double lon, int level) {
     return 1;
 }
 
-static int
+STATIC_INLINE int
 get_index_of_h_key( char k ) {
     int i;
     for ( i = 0; i < H_KEY_COUNT; i++ ) {
