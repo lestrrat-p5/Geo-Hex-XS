@@ -26,6 +26,7 @@ char H_KEY[] = {
     'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'
 };
 
+#define H_MAX_LEVEL 24
 #define H_BASE  (20037508.34)
 #define H_DEG   (M_PI * ( 30.0 / 180.0 ))
 #define H_K     (tan(H_DEG))
@@ -48,6 +49,8 @@ typedef struct {
     double unit_y;
 } PerlGeoHex_BaseUnit;
 
+PerlGeoHex_BaseUnit H_BASEUNITS[25];
+
 STATIC_INLINE double
 PerlGeoHex_hex_size (int level) {
     return (H_BASE / pow(2.0, level)) / 3.0;
@@ -59,13 +62,13 @@ PerlGeoHex_hmax( double unit_x, double unit_y ) {
 }
 
 STATIC_INLINE int
-PerlGeoHex_BaseUnit_from_level( PerlGeoHex_BaseUnit *u, int level ) {
-    u->level = level;
-    u->h_size = PerlGeoHex_hex_size(level);
-    u->unit_x = 6.0 * u->h_size;
-    u->unit_y = 6.0 * u->h_size * H_K;
-    u->h_max  = PerlGeoHex_hmax( u->unit_x, u->unit_y );
-
+PerlGeoHex_BaseUnit_init_level( int level ) {
+    H_BASEUNITS[level].level = level;
+    H_BASEUNITS[level].h_size = PerlGeoHex_hex_size(level);
+    H_BASEUNITS[level].unit_x = 6.0 * H_BASEUNITS[level].h_size;
+    H_BASEUNITS[level].unit_y = 6.0 * H_BASEUNITS[level].h_size * H_K;
+    H_BASEUNITS[level].h_max  = 
+        PerlGeoHex_hmax( H_BASEUNITS[level].unit_x, H_BASEUNITS[level].unit_y );
     return 1;
 }
 
@@ -130,9 +133,7 @@ PerlGeoHex_get_zone_by_location (PerlGeoHex_HexZone *zone, double lat, double lo
     double h_x, h_y;
     double h_lon, h_lat;
     double z_loc_x, z_loc_y;
-    PerlGeoHex_BaseUnit u;
-
-    PerlGeoHex_BaseUnit_from_level( &u, level );
+    PerlGeoHex_BaseUnit u = H_BASEUNITS[level];
     PerlGeoHex_loc2xy( lon, lat, &lon_grid, &lat_grid );
 
     h_pos_x = ( lon_grid + lat_grid / H_K ) / u.unit_x;
@@ -143,6 +144,7 @@ PerlGeoHex_get_zone_by_location (PerlGeoHex_HexZone *zone, double lat, double lo
     h_y_q   = h_pos_y - h_y_0;
     h_x     = round(h_pos_x);
     h_y     = round(h_pos_y);
+
 
     if ( h_y_q > -1 * h_x_q + 1 ) {
         if ( ( h_y_q < 2 * h_x_q ) && ( h_y_q > 0.5 * h_x_q ) ) {
@@ -199,11 +201,9 @@ PerlGeoHex_get_index_of_h_key( char k ) {
 static int
 PerlGeoHex_get_zone_by_code( PerlGeoHex_HexZone *zone, char *code ) {
     int i;
-    PerlGeoHex_BaseUnit u;
     double h_x = 0, h_y = 0;
     double h_lon, h_lat;
-
-    PerlGeoHex_BaseUnit_from_level( &u, PerlGeoHex_get_index_of_h_key( *code ) ); 
+    PerlGeoHex_BaseUnit u = H_BASEUNITS[ PerlGeoHex_get_index_of_h_key( *code )  ]; 
 
     for (i = 4; i >= 0; i--) {
         if ( u.h_max >= X60POW[i] / 2 ) {
@@ -252,14 +252,12 @@ PerlGeoHex_get_steps( double start_x, double start_y, double end_x, double end_y
 
 static int
 PerlGeoHex_get_zone_by_xy( PerlGeoHex_HexZone *zone, double x, double y, int level ) {
-    PerlGeoHex_BaseUnit u;
     double h_lat, h_lon;
     int x_p = x < 0 ? 1 : 0;
     int y_p = y < 0 ? 1 : 0;
     double h_x_abs = abs(x) * 2 + x_p;
     double h_y_abs = abs(y) * 2 + y_p;
-
-    PerlGeoHex_BaseUnit_from_level( &u, level );
+    PerlGeoHex_BaseUnit u = H_BASEUNITS[level];
     PerlGeoHex_xy2latlon( &u, x, y, &h_lat, &h_lon );
     PerlGeoHex_get_code_by_xy( zone->code, (int) h_x_abs, (int) h_y_abs, u.h_max, level );
     zone->lat = h_lat;
@@ -270,9 +268,23 @@ PerlGeoHex_get_zone_by_xy( PerlGeoHex_HexZone *zone, double x, double y, int lev
     return 1;
 }
 
+STATIC_INLINE int
+PerlGeoHex_bootstrap() {
+    int i;
+
+    /* Levels only vary from 0 to 24, so precompute them and save a tree */
+    for( i = 0; i <= H_MAX_LEVEL; i++) {
+        PerlGeoHex_BaseUnit_init_level( i );
+    }
+    return 1;
+}
+
 MODULE = Geo::Hex::XS   PACKAGE = Geo::Hex::XS    PREFIX = PerlGeoHex_
 
 PROTOTYPES: DISABLE
+
+BOOT:
+    PerlGeoHex_bootstrap();
 
 PerlGeoHex_HexZone
 PerlGeoHex_get_zone_by_code( code )
