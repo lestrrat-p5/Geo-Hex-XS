@@ -92,7 +92,7 @@ PerlGeoHex_xy2latlon( PerlGeoHex_BaseUnit *u, double x, double y, double *lat, d
 }
 
 STATIC_INLINE int
-get_code_by_xy( char *code, int x, int y, double max, int level ) {
+PerlGeoHex_get_code_by_xy( char *code, int x, int y, double max, int level ) {
     int i = 0;
     char buf[3];
 
@@ -121,7 +121,7 @@ get_code_by_xy( char *code, int x, int y, double max, int level ) {
 }
 
 static int
-get_zone_by_location (PerlGeoHex_HexZone *zone, double lat, double lon, int level) {
+PerlGeoHex_get_zone_by_location (PerlGeoHex_HexZone *zone, double lat, double lon, int level) {
     double lon_grid, lat_grid;
     double h_pos_x, h_pos_y;
     double h_x_0, h_y_0;
@@ -180,13 +180,13 @@ get_zone_by_location (PerlGeoHex_HexZone *zone, double lat, double lon, int leve
     zone->x   = h_x == 0 ? 0 : h_x;
     zone->y   = h_y == 0 ? 0 : h_y;
 
-    get_code_by_xy( zone->code, (int) h_x_abs, (int) h_y_abs, u.h_max, level );
+    PerlGeoHex_get_code_by_xy( zone->code, (int) h_x_abs, (int) h_y_abs, u.h_max, level );
 
     return 1;
 }
 
 STATIC_INLINE int
-get_index_of_h_key( char k ) {
+PerlGeoHex_get_index_of_h_key( char k ) {
     int i;
     for ( i = 0; i < H_KEY_COUNT; i++ ) {
         if (H_KEY[i] == k) {
@@ -197,20 +197,20 @@ get_index_of_h_key( char k ) {
 }
 
 static int
-get_zone_by_code( PerlGeoHex_HexZone *zone, char *code ) {
+PerlGeoHex_get_zone_by_code( PerlGeoHex_HexZone *zone, char *code ) {
     int i;
     PerlGeoHex_BaseUnit u;
     double h_x = 0, h_y = 0;
     double h_lon, h_lat;
 
-    PerlGeoHex_BaseUnit_from_level( &u, get_index_of_h_key( *code ) ); 
+    PerlGeoHex_BaseUnit_from_level( &u, PerlGeoHex_get_index_of_h_key( *code ) ); 
 
     for (i = 4; i >= 0; i--) {
         if ( u.h_max >= X60POW[i] / 2 ) {
             int j;
             for ( j = i; j >= 0; j-- ) {
-                h_x += get_index_of_h_key( *(code + (i - j) * 2 + 1) ) * X60POW[j];
-                h_y += get_index_of_h_key( *(code + (i - j + 1) * 2) ) * X60POW[j];
+                h_x += PerlGeoHex_get_index_of_h_key( *(code + (i - j) * 2 + 1) ) * X60POW[j];
+                h_y += PerlGeoHex_get_index_of_h_key( *(code + (i - j + 1) * 2) ) * X60POW[j];
             }
             break;
         }
@@ -232,7 +232,7 @@ get_zone_by_code( PerlGeoHex_HexZone *zone, char *code ) {
 }
 
 static int
-get_steps( double start_x, double start_y, double end_x, double end_y ) {
+PerlGeoHex_get_steps( double start_x, double start_y, double end_x, double end_y ) {
     double x = end_x - start_x;
     double y = end_y - start_y;
     double x_abs = abs(x);
@@ -251,7 +251,7 @@ get_steps( double start_x, double start_y, double end_x, double end_y ) {
 }
 
 static int
-get_zone_by_xy( PerlGeoHex_HexZone *zone, double x, double y, int level ) {
+PerlGeoHex_get_zone_by_xy( PerlGeoHex_HexZone *zone, double x, double y, int level ) {
     PerlGeoHex_BaseUnit u;
     double h_lat, h_lon;
     int x_p = x < 0 ? 1 : 0;
@@ -261,8 +261,7 @@ get_zone_by_xy( PerlGeoHex_HexZone *zone, double x, double y, int level ) {
 
     PerlGeoHex_BaseUnit_from_level( &u, level );
     PerlGeoHex_xy2latlon( &u, x, y, &h_lat, &h_lon );
-
-    get_code_by_xy( zone->code, (int) h_x_abs, (int) h_y_abs, u.h_max, level );
+    PerlGeoHex_get_code_by_xy( zone->code, (int) h_x_abs, (int) h_y_abs, u.h_max, level );
     zone->lat = h_lat;
     zone->lon = h_lon;
     zone->x = x;
@@ -271,77 +270,77 @@ get_zone_by_xy( PerlGeoHex_HexZone *zone, double x, double y, int level ) {
     return 1;
 }
 
-MODULE = Geo::Hex::XS   PACKAGE = Geo::Hex::XS
+MODULE = Geo::Hex::XS   PACKAGE = Geo::Hex::XS    PREFIX = PerlGeoHex_
 
 PROTOTYPES: DISABLE
 
 PerlGeoHex_HexZone
-get_zone_by_code( code )
+PerlGeoHex_get_zone_by_code( code )
         char *code;
     PREINIT:
         PerlGeoHex_HexZone zone;
     CODE:
-        get_zone_by_code( &zone, code);
+        PerlGeoHex_get_zone_by_code( &zone, code);
         RETVAL = zone;
     OUTPUT:
         RETVAL
 
 PerlGeoHex_HexZone
-get_zone_by_location( lat, lon, level = 16)
+PerlGeoHex_get_zone_by_location( lat, lon, level = 16)
         NV lat;
         NV lon;
         IV level;
     PREINIT:
         PerlGeoHex_HexZone zone;
     CODE:
-        get_zone_by_location( &zone, lat, lon, level );
+        PerlGeoHex_get_zone_by_location( &zone, lat, lon, level );
         RETVAL = zone;
     OUTPUT:
         RETVAL
 
 PerlGeoHex_HexZone
-get_zone_by_xy( x, y, level = 16)
+PerlGeoHex_get_zone_by_xy( x, y, level = 16)
         NV x;
         NV y;
         IV level;
     PREINIT:
         PerlGeoHex_HexZone zone;
     CODE:
-        get_zone_by_xy( &zone, x, y, level );
+        PerlGeoHex_get_zone_by_xy( &zone, x, y, level );
         RETVAL = zone;
     OUTPUT:
         RETVAL
 
 NV
-get_steps( start_x, start_y, end_x, end_y )
+PerlGeoHex_get_steps( start_x, start_y, end_x, end_y )
         NV start_x;
         NV start_y;
         NV end_x;
         NV end_y;
 
 SV *
-encode_geohex( lat, lon, level = 16)
+PerlGeoHex_encode_geohex( lat, lon, level = 16)
         NV lat;
         NV lon;
         IV level;
     PREINIT:
         PerlGeoHex_HexZone zone;
     CODE:
-        get_zone_by_location( &zone, lat, lon, level );
+        PerlGeoHex_get_zone_by_location( &zone, lat, lon, level );
         RETVAL = newSV(0);
         sv_setpv( RETVAL, zone.code );
     OUTPUT:
         RETVAL
 
 void
-decode_geohex( code )
+PerlGeoHex_decode_geohex( code )
         char *code;
     PREINIT:
         PerlGeoHex_HexZone zone;
         int level;
     PPCODE:
-        get_zone_by_code( &zone, code );
-        level = get_index_of_h_key( *code );
+        PerlGeoHex_get_zone_by_code( &zone, code );
+        level = PerlGeoHex_get_index_of_h_key( *code );
 
         mXPUSHn( zone.lat );
         mXPUSHn( zone.lon );
