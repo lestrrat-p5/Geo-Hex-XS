@@ -26,7 +26,7 @@ char H_KEY[] = {
     'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'
 };
 
-#define H_MAX_LEVEL 24
+#define H_LEVELS 25
 #define H_BASE  (20037508.34)
 #define H_DEG   (M_PI * ( 30.0 / 180.0 ))
 #define H_K     (tan(H_DEG))
@@ -49,7 +49,7 @@ typedef struct {
     double unit_y;
 } PerlGeoHex_BaseUnit;
 
-PerlGeoHex_BaseUnit H_BASEUNITS[25];
+PerlGeoHex_BaseUnit H_BASEUNITS[H_LEVELS];
 
 STATIC_INLINE double
 PerlGeoHex_hex_size (int level) {
@@ -273,7 +273,7 @@ PerlGeoHex_bootstrap() {
     int i;
 
     /* Levels only vary from 0 to 24, so precompute them and save a tree */
-    for( i = 0; i <= H_MAX_LEVEL; i++) {
+    for( i = 0; i < H_LEVELS; i++) {
         PerlGeoHex_BaseUnit_init_level( i );
     }
     return 1;
