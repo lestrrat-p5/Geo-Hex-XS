@@ -38,7 +38,7 @@ typedef struct {
     double x;
     double y;
     char code[ GEOHEX_CODE_BUFSIZ ];
-} PerlGeo_HexZone;
+} PerlGeoHex_HexZone;
 
 typedef struct {
     int level;
@@ -121,7 +121,7 @@ get_code_by_xy( char *code, int x, int y, double max, int level ) {
 }
 
 static int
-get_zone_by_location (PerlGeo_HexZone *zone, double lat, double lon, int level) {
+get_zone_by_location (PerlGeoHex_HexZone *zone, double lat, double lon, int level) {
     double lon_grid, lat_grid;
     double h_pos_x, h_pos_y;
     double h_x_0, h_y_0;
@@ -197,7 +197,7 @@ get_index_of_h_key( char k ) {
 }
 
 static int
-get_zone_by_code( PerlGeo_HexZone *zone, char *code ) {
+get_zone_by_code( PerlGeoHex_HexZone *zone, char *code ) {
     int i;
     PerlGeoHex_BaseUnit u;
     double h_x = 0, h_y = 0;
@@ -251,14 +251,13 @@ get_steps( double start_x, double start_y, double end_x, double end_y ) {
 }
 
 static int
-get_zone_by_xy( PerlGeo_HexZone *zone, double x, double y, int level ) {
+get_zone_by_xy( PerlGeoHex_HexZone *zone, double x, double y, int level ) {
     PerlGeoHex_BaseUnit u;
     double h_lat, h_lon;
     int x_p = x < 0 ? 1 : 0;
     int y_p = y < 0 ? 1 : 0;
     double h_x_abs = abs(x) * 2 + x_p;
     double h_y_abs = abs(y) * 2 + y_p;
-
 
     PerlGeoHex_BaseUnit_from_level( &u, level );
     PerlGeoHex_xy2latlon( &u, x, y, &h_lat, &h_lon );
@@ -276,144 +275,40 @@ MODULE = Geo::Hex::XS   PACKAGE = Geo::Hex::XS
 
 PROTOTYPES: DISABLE
 
-SV *
+PerlGeoHex_HexZone
 get_zone_by_code( code )
         char *code;
     PREINIT:
-        PerlGeo_HexZone zone;
+        PerlGeoHex_HexZone zone;
     CODE:
         get_zone_by_code( &zone, code);
-        {
-            dSP;
-            int count = 0;
-            SV *zone_sv;
-
-            ENTER;
-            SAVETMPS;
-            PUSHMARK(SP);
-            mXPUSHp( "Geo::Hex::XS::Zone", 18 );
-            mXPUSHp( "lat",  3 );
-            mXPUSHn( zone.lat );
-            mXPUSHp( "lon",  3 );
-            mXPUSHn( zone.lon );
-            mXPUSHp( "x",  1 );
-            mXPUSHn( zone.x );
-            mXPUSHp( "y",  1 );
-            mXPUSHn( zone.y );
-            mXPUSHp( "code",  4 );
-            mXPUSHp( zone.code, strlen(zone.code) );
-            PUTBACK;
-
-            count = call_method( "new", G_SCALAR );
-            SPAGAIN;
-
-            if (count < 1) {
-                croak("Geo::Hex::XS::Zone::new did not return an object");
-            }
-
-            zone_sv = newSVsv(POPs);
-            PUTBACK;
-            FREETMPS;
-            LEAVE;
-
-            RETVAL = zone_sv;
-        }
+        RETVAL = zone;
     OUTPUT:
         RETVAL
 
-SV *
+PerlGeoHex_HexZone
 get_zone_by_location( lat, lon, level = 16)
         NV lat;
         NV lon;
         IV level;
     PREINIT:
-        PerlGeo_HexZone zone;
+        PerlGeoHex_HexZone zone;
     CODE:
         get_zone_by_location( &zone, lat, lon, level );
-        {
-            dSP;
-            int count = 0;
-            SV *zone_sv;
-
-            ENTER;
-            SAVETMPS;
-            PUSHMARK(SP);
-            mXPUSHp( "Geo::Hex::XS::Zone", 18 );
-            mXPUSHp( "lat",  3 );
-            mXPUSHn( zone.lat );
-            mXPUSHp( "lon",  3 );
-            mXPUSHn( zone.lon );
-            mXPUSHp( "x",  1 );
-            mXPUSHn( zone.x );
-            mXPUSHp( "y",  1 );
-            mXPUSHn( zone.y );
-            mXPUSHp( "code",  4 );
-            mXPUSHp( zone.code, strlen(zone.code) );
-            PUTBACK;
-
-            count = call_method( "new", G_SCALAR );
-            SPAGAIN;
-
-            if (count < 1) {
-                croak("Geo::Hex::XS::Zone::new did not return an object");
-            }
-
-            zone_sv = newSVsv(POPs);
-            PUTBACK;
-            FREETMPS;
-            LEAVE;
-
-            RETVAL = zone_sv;
-        }
-
+        RETVAL = zone;
     OUTPUT:
         RETVAL
 
-SV *
+PerlGeoHex_HexZone
 get_zone_by_xy( x, y, level = 16)
         NV x;
         NV y;
         IV level;
     PREINIT:
-        PerlGeo_HexZone zone;
+        PerlGeoHex_HexZone zone;
     CODE:
         get_zone_by_xy( &zone, x, y, level );
-        {
-            dSP;
-            int count = 0;
-            SV *zone_sv;
-
-            ENTER;
-            SAVETMPS;
-            PUSHMARK(SP);
-            mXPUSHp( "Geo::Hex::XS::Zone", 18 );
-            mXPUSHp( "lat",  3 );
-            mXPUSHn( zone.lat );
-            mXPUSHp( "lon",  3 );
-            mXPUSHn( zone.lon );
-            mXPUSHp( "x",  1 );
-            mXPUSHn( zone.x );
-            mXPUSHp( "y",  1 );
-            mXPUSHn( zone.y );
-            mXPUSHp( "code",  4 );
-            mXPUSHp( zone.code, strlen(zone.code) );
-            PUTBACK;
-
-            count = call_method( "new", G_SCALAR );
-            SPAGAIN;
-
-            if (count < 1) {
-                croak("Geo::Hex::XS::Zone::new did not return an object");
-            }
-
-            zone_sv = newSVsv(POPs);
-            PUTBACK;
-            FREETMPS;
-            LEAVE;
-
-            RETVAL = zone_sv;
-        }
-
+        RETVAL = zone;
     OUTPUT:
         RETVAL
 
@@ -430,7 +325,7 @@ encode_geohex( lat, lon, level = 16)
         NV lon;
         IV level;
     PREINIT:
-        PerlGeo_HexZone zone;
+        PerlGeoHex_HexZone zone;
     CODE:
         get_zone_by_location( &zone, lat, lon, level );
         RETVAL = newSV(0);
@@ -442,7 +337,7 @@ void
 decode_geohex( code )
         char *code;
     PREINIT:
-        PerlGeo_HexZone zone;
+        PerlGeoHex_HexZone zone;
         int level;
     PPCODE:
         get_zone_by_code( &zone, code );
