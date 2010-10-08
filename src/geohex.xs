@@ -77,11 +77,18 @@ PerlGeoHex_loc2xy ( double lon, double lat, double *x, double *y ) {
 }
 
 STATIC_INLINE int
-PerlGeoHex_xy2loc ( double x, double y, double *lon, double *lat ) {
+PerlGeoHex_xy2loc ( double x, double y, double *lat, double *lon ) {
     *lon = ( x / H_BASE ) * 180;
     *lat = ( y / H_BASE ) * 180;
     *lat = 180 / M_PI * ( 2 * atan( exp( *lat * M_PI / 180 ) ) - M_PI / 2 );
     return 1;
+}
+
+STATIC_INLINE int
+PerlGeoHex_xy2latlon( PerlGeoHex_BaseUnit *u, double x, double y, double *lat, double *lon ) {
+    double h_lat_y = ( H_K * x * u->unit_x + y * u->unit_y ) / 2;
+    double h_lon_x = ( h_lat_y - y * u->unit_y ) / H_K;
+    return PerlGeoHex_xy2loc( h_lon_x, h_lat_y, lat, lon );
 }
 
 STATIC_INLINE int
@@ -121,7 +128,7 @@ get_zone_by_location (PerlGeo_HexZone *zone, double lat, double lon, int level) 
     double h_x_q, h_y_q;
     double h_x_abs, h_y_abs;
     double h_x, h_y;
-    double h_lat, h_lon;
+    double h_lon, h_lat;
     double z_loc_x, z_loc_y;
     PerlGeoHex_BaseUnit u;
 
@@ -149,6 +156,9 @@ get_zone_by_location (PerlGeo_HexZone *zone, double lat, double lon, int level) 
         }
     }
 
+    /* Grr, because of the h_x / h_y fix after the calculation, we can't
+     * just refactor this guy...
+     */
     h_lat = ( H_K * h_x * u.unit_x + h_y * u.unit_y ) / 2.0;
     h_lon = ( h_lat - h_y * u.unit_y ) / H_K;
 
@@ -192,7 +202,6 @@ get_zone_by_code( PerlGeo_HexZone *zone, char *code ) {
     PerlGeoHex_BaseUnit u;
     double h_x = 0, h_y = 0;
     double h_lon, h_lat;
-    double h_lon_x, h_lat_y;
 
     PerlGeoHex_BaseUnit_from_level( &u, get_index_of_h_key( *code ) ); 
 
@@ -210,10 +219,8 @@ get_zone_by_code( PerlGeo_HexZone *zone, char *code ) {
     h_x = ((int) h_x % 2) ? -1 * (h_x - 1) / 2.0 : h_x / 2.0;
     h_y = ((int) h_y % 2) ? -1 * (h_y - 1) / 2.0 : h_y / 2.0;
 
-    h_lat_y = ( H_K * h_x * u.unit_x + h_y * u.unit_y ) / 2.0;
-    h_lon_x = ( h_lat_y - h_y * u.unit_y ) / H_K;
+    PerlGeoHex_xy2latlon( &u, h_x, h_y, &h_lat, &h_lon );
 
-    PerlGeoHex_xy2loc( h_lon_x, h_lat_y, &h_lon, &h_lat );
 
     Copy( code, zone->code, strlen(code), char );
     zone->lat  = h_lat;
@@ -246,7 +253,6 @@ get_steps( double start_x, double start_y, double end_x, double end_y ) {
 static int
 get_zone_by_xy( PerlGeo_HexZone *zone, double x, double y, int level ) {
     PerlGeoHex_BaseUnit u;
-    double h_lat_y, h_lon_x;
     double h_lat, h_lon;
     int x_p = x < 0 ? 1 : 0;
     int y_p = y < 0 ? 1 : 0;
@@ -255,13 +261,9 @@ get_zone_by_xy( PerlGeo_HexZone *zone, double x, double y, int level ) {
 
 
     PerlGeoHex_BaseUnit_from_level( &u, level );
-    h_lat_y = ( H_K * x * u.unit_x + y * u.unit_y ) / 2;
-    h_lon_x = ( h_lat_y - y * u.unit_y ) / H_K;
-
-    PerlGeoHex_xy2loc( h_lon_x, h_lat_y, &h_lon, &h_lat );
+    PerlGeoHex_xy2latlon( &u, x, y, &h_lat, &h_lon );
 
     get_code_by_xy( zone->code, (int) h_x_abs, (int) h_y_abs, u.h_max, level );
-
     zone->lat = h_lat;
     zone->lon = h_lon;
     zone->x = x;
